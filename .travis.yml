@@ -11,13 +11,12 @@ install:
   -  export PATH=$PATH:.
 
 script:
-  - rebar3 get-deps
   - rebar3 compile
   - rebar3 eunit
   - |
      if [ $TRAVIS_OTP_RELEASE == 17.3 ]
         then
-          make dialyzer
+          rebar3 dialyzer
         else
          true
      fi
