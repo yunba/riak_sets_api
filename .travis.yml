@@ -15,7 +15,7 @@ script:
   - rebar3 compile
   - rebar3 eunit
   - |
-     if [ $TRAVIS_OTP_RELEASE == 17.4 ]
+     if [ $TRAVIS_OTP_RELEASE == 17.3 ]
         then
           make dialyzer
         else
