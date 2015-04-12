@@ -3,22 +3,16 @@ language: erlang
 notifications:
   disabled: true
 sudo: required
-install:
-  -  git clone https://github.com/rebar/rebar3.git
-  -  cd rebar3 
-  -  make
-  -  ./bootstrap/bootstrap
-  -  export PATH=$PATH:.
 
 script:
-  - rebar3 update
-  - rebar3 compile
-  - rebar3 eunit
-  - rebar3 xref
+  - rebar get-deps
+  - rebar compile
+  - rebar eunit
+  - rebar xref
   - |
      if [ $TRAVIS_OTP_RELEASE == 17.4 ]
         then
-          rebar3 dialyzer
+          make dialyzer
         else
          true
      fi

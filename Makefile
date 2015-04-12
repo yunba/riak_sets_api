@@ -44,7 +44,7 @@ $(EBINDIR)/%.beam: $(SRCDIR)/%.erl
 
 DEPS_PLT=$(CURDIR)/plt/dialyzer_plt
 
-DEPS=erts kernel stdlib crypto mnesia deps/webmachine/ebin  deps/lager/ebin deps/erlydtl/ebin deps/jsx/ebin deps/qdate/ebin deps/mochiweb/ebin deps/sync/ebin  inets deps/uuid/ebin deps/edate/ebin
+DEPS=erts kernel stdlib crypto mnesia deps/webmachine/ebin  deps/lager/ebin  deps/jsx/ebin deps/qdate/ebin deps/mochiweb/ebin deps/sync/ebin  inets
 
 # =============================================================================
 # Verify that the programs we need to run are installed on this system
@@ -55,7 +55,7 @@ ifeq ($(ERL),)
 $(error "Erlang not available on this system")
 endif
 
-REBAR=$(shell which rebar3)
+REBAR=$(shell which rebar)
 
 .PHONY: all compile doc clean test dialyzer typer shell distclean pdf \
   update-deps clean-common-test-data rebuild
@@ -92,7 +92,7 @@ compile:
 	else $(MAKE) $(MFLAGS) erlc_compile; \
 	fi
 
-fcompile: finch
+fcompile: 
 	$(REBAR) compile skip_deps=true
 
 
