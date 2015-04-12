@@ -3,6 +3,11 @@ language: erlang
 notifications:
   disabled: true
 
+install:
+  -  git clone https://github.com/rebar/rebar3.git
+  -  make
+  - ./bootstrap/bootstrap
+  -  export PATH=$PATH:.
 
 script:
   - rebar3 get-deps
