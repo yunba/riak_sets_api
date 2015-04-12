@@ -2,3 +2,6 @@
 _build
 .rebar
 .eunit
+ebin/
+deps/
+*~
