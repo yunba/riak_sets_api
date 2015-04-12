@@ -28,10 +28,6 @@ ERLC		= erlc
 ESRCS		= $(notdir $(wildcard $(SRCDIR)/*.erl))
 XSRCS		= $(notdir $(wildcard $(SRCDIR)/*.xrl))
 EBINS		= $(ESRCS:.erl=.beam) $(XSRCS:.xrl=.beam)
-#JS_LIB		= apps/ui/priv/js_lib
-#BOWER           = apps/ui/priv/bower_components
-#COFFEE_SRC	= apps/ui/priv/coffee
-WEB_DIR		= apps/ui/priv
 HTTP_PORT      ?= 80
 
 .SUFFIXES: .erl .beam
@@ -44,7 +40,7 @@ $(EBINDIR)/%.beam: $(SRCDIR)/%.erl
 
 DEPS_PLT=$(CURDIR)/plt/dialyzer_plt
 
-DEPS=erts kernel stdlib crypto mnesia deps/webmachine/ebin  deps/lager/ebin  deps/jsx/ebin deps/qdate/ebin deps/mochiweb/ebin deps/sync/ebin  inets
+DEPS=erts kernel stdlib crypto mnesia deps/webmachine/ebin  deps/lager/ebin  deps/jsx/ebin  deps/mochiweb/ebin deps/sync/ebin  inets
 
 # =============================================================================
 # Verify that the programs we need to run are installed on this system
