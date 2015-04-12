@@ -1,0 +1,12 @@
+{application, riak_sets,
+ [{description, "An OTP application"}
+ ,{vsn, "0.1.0"}
+ ,{registered, []}
+ ,{mod, {'riak_sets_app', []}}
+ ,{applications,
+   [kernel
+   ,stdlib
+   ]}
+ ,{env,[]}
+ ,{modules, []}
+ ]}.
