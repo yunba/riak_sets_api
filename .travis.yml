@@ -1,0 +1,27 @@
+language: erlang
+
+notifications:
+  disabled: true
+
+
+script:
+  - rebar3 get-deps
+  - rebar3 compile
+  - rebar3 eunit
+  - |
+     if [ $TRAVIS_OTP_RELEASE == 17.3 ]
+        then
+          make dialyzer
+        else
+         true
+     fi
+
+
+
+otp_release:
+   - 17.3
+   - 17.1
+   - 17.0
+   - R16B03-1
+   - R16B02
+   - R16B01
