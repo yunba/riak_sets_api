@@ -86,7 +86,7 @@ qc: compile
 	$(REBAR) qc ; \
 	fi
 
-compile: finch
+compile: 
 	if [ -n "$(REBAR)" ] ; \
 	then $(REBAR) compile; \
 	else $(MAKE) $(MFLAGS) erlc_compile; \
