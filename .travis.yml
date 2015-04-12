@@ -6,11 +6,12 @@ sudo: required
 install:
   -  git clone https://github.com/rebar/rebar3.git
   -  cd rebar3 
-  - make
-  - ./bootstrap/bootstrap
+  -  make
+  -  ./bootstrap/bootstrap
   -  export PATH=$PATH:.
 
 script:
+  - rebar3 update
   - rebar3 compile
   - rebar3 eunit
   - |
