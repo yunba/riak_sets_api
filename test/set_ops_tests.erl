@@ -136,18 +136,6 @@ start_system_test() ->
     ?assert(is_process_alive(Pid)),
     true.
 
-counter_example_test() ->        
-    setref_serv:start_link(),
-    ?assert(proper:check(prop_run_commands(),
-[[{set,{var,4},
-       {call,setref_serv,add_to_set,
-             [setref_serv,"92c07f58-ab90-4b8e-b966-a1610b59addf",
-              "92c07f58-ab90-4b8e-b966-a1610b59addf"]}},
-  {set,{var,5},
-       {call,setref_serv,remove_from_set,
-             [setref_serv,"92c07f58-ab90-4b8e-b966-a1610b59addf",
-              "92c07f58-ab90-4b8e-b966-a1610b59addf"]}}]])), 
-    true.
 
 run_test() ->
     application:ensure_all_started(lager),
