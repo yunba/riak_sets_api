@@ -9,6 +9,7 @@
 
 
 -module(set_ops_tests).
+-behaviour(proper_statem).
 -include_lib("proper/include/proper.hrl").
 -include_lib("eunit/include/eunit.hrl").
 -compile(export_all).
@@ -58,13 +59,49 @@ prop_save_and_exists() ->
             {set_key(), set_value(), backends()},
             begin
                 {ok, Pid}   = StartFunc(),
-                false = Backend:item_in_set(Pid, Key, Value),
+                false =  Backend:item_in_set(Pid, Key, Value),
+                Backend:add_to_set(Pid, Key, Value),
+                ?assert(  Backend:item_in_set(Pid, Key, Value)),
                 
-                true  = Backend:add_to_set(Pid, Key, Value),
-                false = Backend:item_in_set(Pid, Key, Value),
                 true
 
             end).
+
+pr3op_run_commands() ->
+    
+    ?FORALL(Cmds,
+            non_empty(commands(?MODULE)),
+            ?TRAPEXIT(
+               begin
+                   {_,_,Result} = run_commands(?MODULE,Cmds),
+                   Result == ok
+               end)).
+
+
+command(_M) ->
+    ?LET({Backend, StartFunc},
+         backends(),
+         begin
+             {ok, Pid}   = StartFunc(),
+             oneof([{call, Backend, item_in_set, [Pid, set_key(), set_value()]},
+                    {call, Backend, add_to_set,  [Pid, set_key(), set_value()]}])
+         end).
+
+precondition(_,_) ->
+    true.
+
+initial_state() ->
+    sets:new().
+
+next_state(S,_V, {call, _, add_to_set, [_, Key, Value]}) ->
+    sets:add_element({Key, Value}, S);
+next_state(S,_V, _Cmd) ->
+    S.
+
+postcondition(S,{call,_,item_in_set, [_,Key, Value]},Result) ->
+    Result =:= sets:is_element({Key,Value},S);
+postcondition(_S,_Cmd,_Result) ->
+    true.
 
 start_system_test() ->
     code:add_pathz("../apps/setref/ebin"),
@@ -73,5 +110,6 @@ start_system_test() ->
     true.
         
 run_test() ->
+    application:ensure_all_started(lager),
     code:add_pathz("../apps/setref/ebin"),
     ?assertEqual([],proper:module(?MODULE,[{to_file, user}])).

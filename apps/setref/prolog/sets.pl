@@ -1,16 +1,16 @@
 /* -*-Prolog-* -*/
 
 /**
- * This is a quick and dirty prolog version of the set code,
- * It will be used as a refrence version with erlog to test
- * the normal version against
- *
-*/
-set(a,b).
+ * This is a quick and dirty prolog version of the set code, It will
+ * be used as a refrence version with erlog to test the normal version
+  * against */
 
-add_to_set(Key, Value) :-
-    assert(set(Key, Value)).
+sdata(_,_).
 
-item_in_set(Key, Value) :-
-    set(Key, Value).
+add_to_dataset(Key, Value) :-
+    assert(sdata(Key, Value)).
 
+item_in_dataset(Key,Value,false) :-
+    \+  sdata(Key,Value),false.
+item_in_dataset(Key, Value, true) :-
+    sdata(Key, Value).

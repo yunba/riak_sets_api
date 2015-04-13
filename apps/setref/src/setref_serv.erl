@@ -18,7 +18,7 @@
          terminate/2, code_change/3]).
 -export([item_in_set/3]).
 -export([add_to_set/3]).
-
+-compile({parse_transform, lager_transform}).
 %-export([create_set/2, add_to_set/2, item_in_set/2, delete_item_from_set/2]).
 %-export([create_set/2, add_to_set/2, item_in_set/2, delete_item_from_set/2]).
 -define(SERVER, ?MODULE).
@@ -29,17 +29,13 @@
 %%% API
 %%%===================================================================
 item_in_set(Pid,Set, Item) ->
-    case gen_server:call(Pid, {item_in_set, Set, Item}) of
-        true -> true;
-        [] -> 
-            false;
-        fail ->
-            false
-                
+    case gen_server:call(Pid, {item_in_dataset, Set, Item, {'X'}}) of
+        [{'X',X}] -> X
+    
     end.
 
 add_to_set(Pid, Set, Item) ->
-    [] =  gen_server:call(Pid, {add_to_set, Set, Item}),
+     gen_server:call(Pid, {add_to_dataset, Set, Item}),
     true.
 
 %%--------------------------------------------------------------------
@@ -88,9 +84,10 @@ init([]) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call( PLTERM, _From, Erlog) ->
+    lager:info("Run Prolog ~p",[PLTERM]),
     case erlog:prove(PLTERM, Erlog) of
         {{succeed, Reply}, Erlog1} ->
-            
+            lager:info("Result ~p", [Reply]),
             {reply, Reply, Erlog1};
         {fail,Erlog1} ->
             {reply, fail, Erlog1}
