@@ -137,7 +137,8 @@ start_system_test() ->
     true.
 
 
-run_test() ->
+run_test_() ->
     application:ensure_all_started(lager),
     code:add_pathz("../apps/setref/ebin"),
-    ?assertEqual([],proper:module(?MODULE,[100,{to_file, user}])).
+    {timeout, 3600,
+     ?_assertEqual([],proper:module(?MODULE,[100,{to_file, user}]))}.
