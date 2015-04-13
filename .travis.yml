@@ -18,7 +18,6 @@ script:
      fi
 
 
-
 otp_release:
    - 17.4
    - 17.3

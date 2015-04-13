@@ -1,11 +1,10 @@
 {application, riak_sets,
- [{description, "An OTP application"}
+ [{description, "A set store with Riak distribution"}
  ,{vsn, "0.1.0"}
  ,{registered, []}
  ,{mod, {'riak_sets_app', []}}
  ,{applications,
-   [kernel
-   ,stdlib
+   [kernel ,stdlib ,riak_sets_api,setref
    ]}
  ,{env,[]}
  ,{modules, []}
