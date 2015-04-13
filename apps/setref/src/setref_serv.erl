@@ -18,9 +18,10 @@
          terminate/2, code_change/3]).
 -export([item_in_set/3]).
 -export([add_to_set/3]).
+-export([remove_from_set/3]).
+
 -compile({parse_transform, lager_transform}).
-%-export([create_set/2, add_to_set/2, item_in_set/2, delete_item_from_set/2]).
-%-export([create_set/2, add_to_set/2, item_in_set/2, delete_item_from_set/2]).
+
 -define(SERVER, ?MODULE).
 
 
@@ -29,13 +30,14 @@
 %%% API
 %%%===================================================================
 item_in_set(Pid,Set, Item) ->
-    case gen_server:call(Pid, {item_in_dataset, Set, Item, {'X'}}) of
-        [{'X',X}] -> X
+    gen_server:call(Pid, {item_in_dataset, Set, Item}).
     
-    end.
 
 add_to_set(Pid, Set, Item) ->
-     gen_server:call(Pid, {add_to_dataset, Set, Item}),
+    gen_server:call(Pid, {add_to_dataset, Set, Item}),
+    true.
+
+remove_from_set(Pid,Set,Item) ->
     true.
 
 %%--------------------------------------------------------------------
@@ -46,7 +48,7 @@ add_to_set(Pid, Set, Item) ->
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
-    gen_server:start_link( ?MODULE, [], []).
+    gen_server:start_link({local,setref_serv}, ?MODULE, [], []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -63,11 +65,13 @@ start_link() ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([]) ->
+init([prolog]) ->
     {ok, File}   = get_file(),
     {ok, Erlog}  = erlog:new(),
     {ok, Erlog1} = erlog:consult(File, Erlog),
-    {ok,  Erlog1}.
+    {ok,  Erlog1};
+init([]) ->
+    {ok, sets:new()}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -83,15 +87,22 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call( PLTERM, _From, Erlog) ->
-    lager:info("Run Prolog ~p",[PLTERM]),
-    case erlog:prove(PLTERM, Erlog) of
-        {{succeed, Reply}, Erlog1} ->
-            lager:info("Result ~p", [Reply]),
-            {reply, Reply, Erlog1};
-        {fail,Erlog1} ->
-            {reply, fail, Erlog1}
-    end.
+handle_call({item_in_dataset, Key, Item}, _From, Set) ->
+    {reply,sets:is_element({Key,Item}, Set), Set};
+handle_call({add_to_dataset, Key, Item}, _From, Set) ->
+    {reply,ok,sets:add_element({Key,Item},Set)};
+handle_call(list, _From,Set) ->
+    {reply, Set, Set}.
+
+%% handle_call( PLTERM, _From, Erlog) ->
+%%     lager:info("Run Prolog ~p",[PLTERM]),
+%%     case erlog:prove(PLTERM, Erlog) of
+%%         {{succeed, Reply}, Erlog1} ->
+%%             lager:info("Result ~p", [Reply]),
+%%             {reply, Reply, Erlog1};
+%%         {fail,Erlog1} ->
+%%             {reply, fail, Erlog1}
+%%     end.
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -105,7 +116,11 @@ handle_call( PLTERM, _From, Erlog) ->
 handle_cast(reconsult, Erlog) ->
     {ok, File}   = get_file(),
     {ok, Erlog1} = erlog:reconsult(File, Erlog),
-    {noreply, Erlog1}.
+    {noreply, Erlog1};
+handle_cast(reset,_) ->
+    {noreply, sets:new()};
+handle_cast(exit, _) ->
+    {stop, exit, exit}.
 
 %%--------------------------------------------------------------------
 %% @private

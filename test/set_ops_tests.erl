@@ -55,39 +55,40 @@ backends() ->
                         end}]).
 
 prop_save_and_exists() ->
-    ?FORALL({Key, Value, {Backend, StartFunc}},
-            {set_key(), set_value(), backends()},
+    ?FORALL({Key, Value},
+            {set_key(), set_value()},
             begin
-                {ok, Pid}   = StartFunc(),
+                Backend = setref_serv,
+                setref_serv:start_link(),
+                Pid   = setref_serv,
+                gen_server:cast(setref_serv,'reset'),
                 false =  Backend:item_in_set(Pid, Key, Value),
                 Backend:add_to_set(Pid, Key, Value),
-                ?assert(  Backend:item_in_set(Pid, Key, Value)),
+                true  =  Backend:item_in_set(Pid, Key, Value),
                 true
 
             end).
 
 prop_run_commands() ->
-    ?FORALL(
-           {Backend, StartFunc},backends(),
-       begin
-           {ok,Pid} = StartFunc(),
-           
-           ?FORALL(Cmds,
-                   non_empty(commands(?MODULE)),
-                   ?TRAPEXIT(
+    ?FORALL(Cmds,
+            non_empty(commands(?MODULE)),
+            ?TRAPEXIT(
+               begin
+                   gen_server:cast(setref_serv,'reset'),
+                   setref_serv:start_link(),
+
+                   Pid = setref_serv,
+                   {_Start,End,ok} = run_commands(?MODULE,Cmds),
+                   
+                   ?WHENFAIL(
                       begin
-                          {ok, Pid}       = StartFunc(),
-                          {_Start,End,ok} = run_commands(?MODULE,Cmds),
-                          
-                          ?WHENFAIL(
-                             begin
-                                 print_cmds(Cmds,0),
-                                 io:format(user, "Set Values ~n~p~n~p~n",[sets:to_list(End),sets:to_list( gen_server:call(Pid, list))])
-                             end,
-                             End == gen_server:call(Pid, list))
-                              
-                      end))
-       end).
+                          print_cmds(Cmds,0),
+                          io:format(user, "Set Values ~n~p~n~p~n",[sets:to_list(End),sets:to_list( gen_server:call(Pid, list))])
+                      end,
+                      End == gen_server:call(Pid, list))
+                       
+               end)).
+
 
 print_cmds([],_) ->
     ok;
@@ -100,11 +101,12 @@ get_pid([{set,_,{call,_,_,[Pid|_]}}|_]) ->
 get_backend([{set,_,{call,Backend,_,_}}|_]) ->
     Backend.
 
-command({Pid,Backend}) ->
+command(_) ->
+    Backend = setref_serv,
     oneof([
-           {call, Backend, item_in_set,     [Pid, set_key(), set_value()]},
-           {call, Backend, add_to_set,      [Pid, set_key(), set_value()]},
-           {call, Backend, remove_from_set, [Pid, set_key(), set_value()]}
+           {call, Backend, item_in_set,     [setref_serv, set_key(), set_value()]},
+           {call, Backend, add_to_set,      [setref_serv, set_key(), set_value()]},
+           {call, Backend, remove_from_set, [setref_serv, set_key(), set_value()]}
           ]).
         
 
@@ -136,4 +138,4 @@ start_system_test() ->
 run_test() ->
     application:ensure_all_started(lager),
     code:add_pathz("../apps/setref/ebin"),
-    ?assertEqual([],proper:module(?MODULE,[{to_file, user}])).
+    ?assertEqual([],proper:module(?MODULE,[100,{to_file, user}])).
