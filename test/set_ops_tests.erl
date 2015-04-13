@@ -38,10 +38,11 @@ evil_real() ->
                {1, return(0.0)},
                {1, return(0.0/-1)}]).
 
-value() -> 
-    frequency([{100, oneof([int(),binary(), char(), uuid(), vector(10, char())])},
-               {10, evil_real()},
-               {50, set_guid()}]).
+value() -> set_guid().
+
+    %% frequency([{100, oneof([int(),binary(), char(), uuid(), vector(10, char())])},
+    %%            {10, evil_real()},
+    %%            {50, set_guid()}]).
 
 
 
@@ -83,7 +84,7 @@ prop_run_commands() ->
                    ?WHENFAIL(
                       begin
                           print_cmds(Cmds,0),
-                          io:format(user, "Set Values ~n~p~n~p~n",[sets:to_list(End),sets:to_list( gen_server:call(Pid, list))])
+                          io:format(user, "Set Values ~nModel: ~p~nServer: ~p~n",[sets:to_list(End),sets:to_list( gen_server:call(Pid, list))])
                       end,
                       End == gen_server:call(Pid, list))
                        
@@ -134,7 +135,20 @@ start_system_test() ->
     {ok, Pid} = setref_serv:start_link(),
     ?assert(is_process_alive(Pid)),
     true.
-        
+
+counter_example_test() ->        
+    setref_serv:start_link(),
+    ?assert(proper:check(prop_run_commands(),
+[[{set,{var,4},
+       {call,setref_serv,add_to_set,
+             [setref_serv,"92c07f58-ab90-4b8e-b966-a1610b59addf",
+              "92c07f58-ab90-4b8e-b966-a1610b59addf"]}},
+  {set,{var,5},
+       {call,setref_serv,remove_from_set,
+             [setref_serv,"92c07f58-ab90-4b8e-b966-a1610b59addf",
+              "92c07f58-ab90-4b8e-b966-a1610b59addf"]}}]])), 
+    true.
+
 run_test() ->
     application:ensure_all_started(lager),
     code:add_pathz("../apps/setref/ebin"),

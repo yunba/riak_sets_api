@@ -72,7 +72,7 @@ update-deps:
 	$(REBAR) update-deps; $(REBAR) compile ; \
 	fi
 
-eunit: fcompile
+eunit: compile
 	@if [ -n "$(REBAR)" ] ; then \
 	ERL_LIBS=~/eqcmini $(REBAR) eunit skip_deps=true ; \
 	fi
@@ -82,7 +82,7 @@ qc: compile
 	$(REBAR) qc ; \
 	fi
 
-compile: 
+compile: deps 
 	if [ -n "$(REBAR)" ] ; \
 	then $(REBAR) compile; \
 	else $(MAKE) $(MFLAGS) erlc_compile; \
@@ -104,7 +104,7 @@ ct: compile
 	$(REBAR) skip_deps=true ct ; \
 	fi
 
-test: compile eunit phantom dialyzer flow
+test: compile eunit dialyzer 
 
 start: compile
 	erl -name erlog -pa ebin -pa deps/*/ebin   #-s reloader
@@ -120,7 +120,7 @@ dialyzer: fcompile plt
 	dialyzer \
 	--fullpath \
 	--plt $(DEPS_PLT) \
-	-Wrace_conditions -r  ebin
+	-Wrace_conditions -r  ebin apps/*/ebin
 
 
 typer:
@@ -153,7 +153,7 @@ clean:
 distclean: clean
 	- rm -rf $(DEPS_PLT)
 	- rm -rvf $(CURDIR)/deps
-	- rm -rf $(BOWER)/*
+
 
 rebuild: distclean deps compile escript dialyzer test
 

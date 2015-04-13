@@ -38,6 +38,7 @@ add_to_set(Pid, Set, Item) ->
     true.
 
 remove_from_set(Pid,Set,Item) ->
+    gen_server:call(Pid, {remove_from_set, Set, Item}),
     true.
 
 %%--------------------------------------------------------------------
@@ -91,6 +92,9 @@ handle_call({item_in_dataset, Key, Item}, _From, Set) ->
     {reply,sets:is_element({Key,Item}, Set), Set};
 handle_call({add_to_dataset, Key, Item}, _From, Set) ->
     {reply,ok,sets:add_element({Key,Item},Set)};
+handle_call({remove_from_set, Key, Item}, _From, Set) ->
+    {reply,ok,sets:del_element({Key,Item},Set)};
+
 handle_call(list, _From,Set) ->
     {reply, Set, Set}.
 
