@@ -38,10 +38,10 @@ evil_real() ->
                {1, return(0.0)},
                {1, return(0.0/-1)}]).
 
-value() ->
+value() -> 
     frequency([{100, oneof([int(),binary(), char(), uuid(), vector(10, char())])},
                {10, evil_real()},
-               {10, set_guid()}]).
+               {50, set_guid()}]).
 
 
 
@@ -62,30 +62,52 @@ prop_save_and_exists() ->
                 false =  Backend:item_in_set(Pid, Key, Value),
                 Backend:add_to_set(Pid, Key, Value),
                 ?assert(  Backend:item_in_set(Pid, Key, Value)),
-                
                 true
 
             end).
 
-pr3op_run_commands() ->
-    
-    ?FORALL(Cmds,
-            non_empty(commands(?MODULE)),
-            ?TRAPEXIT(
-               begin
-                   {_,_,Result} = run_commands(?MODULE,Cmds),
-                   Result == ok
-               end)).
+prop_run_commands() ->
+    ?FORALL(
+           {Backend, StartFunc},backends(),
+       begin
+           {ok,Pid} = StartFunc(),
+           
+           ?FORALL(Cmds,
+                   non_empty(commands(?MODULE)),
+                   ?TRAPEXIT(
+                      begin
+                          {ok, Pid}       = StartFunc(),
+                          {_Start,End,ok} = run_commands(?MODULE,Cmds),
+                          
+                          ?WHENFAIL(
+                             begin
+                                 print_cmds(Cmds,0),
+                                 io:format(user, "Set Values ~n~p~n~p~n",[sets:to_list(End),sets:to_list( gen_server:call(Pid, list))])
+                             end,
+                             End == gen_server:call(Pid, list))
+                              
+                      end))
+       end).
 
+print_cmds([],_) ->
+    ok;
+print_cmds([Cmd|Rest],N) ->
+    io:format(user,"~p  Command: ~p~n",[N,Cmd]),
+    print_cmds(Rest,N+1).
 
-command(_M) ->
-    ?LET({Backend, StartFunc},
-         backends(),
-         begin
-             {ok, Pid}   = StartFunc(),
-             oneof([{call, Backend, item_in_set, [Pid, set_key(), set_value()]},
-                    {call, Backend, add_to_set,  [Pid, set_key(), set_value()]}])
-         end).
+get_pid([{set,_,{call,_,_,[Pid|_]}}|_]) ->
+    Pid.
+get_backend([{set,_,{call,Backend,_,_}}|_]) ->
+    Backend.
+
+command({Pid,Backend}) ->
+    oneof([
+           {call, Backend, item_in_set,     [Pid, set_key(), set_value()]},
+           {call, Backend, add_to_set,      [Pid, set_key(), set_value()]},
+           {call, Backend, remove_from_set, [Pid, set_key(), set_value()]}
+          ]).
+        
+
 
 precondition(_,_) ->
     true.
@@ -95,11 +117,13 @@ initial_state() ->
 
 next_state(S,_V, {call, _, add_to_set, [_, Key, Value]}) ->
     sets:add_element({Key, Value}, S);
+next_state(S,_V, _Cmd = {call, _, remove_from_set, [_, Key, Value]}) ->
+    sets:del_element({Key, Value}, S);
 next_state(S,_V, _Cmd) ->
     S.
 
 postcondition(S,{call,_,item_in_set, [_,Key, Value]},Result) ->
-    Result =:= sets:is_element({Key,Value},S);
+    Result == sets:is_element({Key,Value},S);
 postcondition(_S,_Cmd,_Result) ->
     true.
 
