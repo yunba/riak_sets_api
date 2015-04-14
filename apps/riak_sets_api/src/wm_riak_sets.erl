@@ -10,7 +10,7 @@
 -include_lib("types/include/types.hrl").
 %% The Request data record
 -type rd() :: wrq:reqdata().
-
+-compile([{parse_transform, lager_transform}]). 
 %% Used in callbacks that can halt or error. See "Halting Resources" above.
 -type halt() :: {error, term()} | {halt, 200..599}.
 
@@ -59,14 +59,28 @@ allowed_methods(ReqData, State) ->
     end.
 
 -spec resource_exists(rd(), state()) -> {boolean() | halt(), rd(), state()}.
-resource_exists(ReqData, State) ->
-    {true, ReqData, State}.
+resource_exists(ReqData= #wm_reqdata{ method = 'GET'}, State = #state{key = Key, value = undefined}) ->
+    lager:info("Resource Exits ~p", [lager:pr(State, ?MODULE)]),
+    {true, ReqData, State};
+
+resource_exists(ReqData = #wm_reqdata{method = 'GET'}, State = #state{key = Key, value = Value}) ->
+    lager:info("Resource Exits ~p", [lager:pr(State, ?MODULE)]),
+    lager:info("Item Exists ~p", [?BACKEND:item_in_set(?BACKEND, Key, Value)]),
+    {?BACKEND:item_in_set(?BACKEND, Key, Value), ReqData, State}.
 
 
 -spec to_html(rd(), term()) -> {iodata(), rd(), state()}.
 to_html(ReqData, State) ->
     {"<html><body>ok</body></html>\n", ReqData, State}.
 
+-spec to_json(rd(), term()) -> {iodata(), rd(), state()}.
+to_json(ReqData,State) ->
+    {"[]\n", ReqData,State}.
+
+
+-spec content_types_provided(rd(), state()) -> {[{MediaType::string(), Handler::atom()}], rd(), state()}.
+content_types_provided(ReqData,State) ->
+    {[{"application/json", to_json}], ReqData,State}.
 
 -spec(get_key(rd) ->maybe(setkey())).
 get_key(ReqData) ->

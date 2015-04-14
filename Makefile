@@ -72,7 +72,7 @@ update-deps:
 	$(REBAR) update-deps; $(REBAR) compile ; \
 	fi
 
-eunit: compile
+eunit: fcompile
 	@if [ -n "$(REBAR)" ] ; then \
 	ERL_LIBS=~/eqcmini $(REBAR) eunit skip_deps=true ; \
 	fi

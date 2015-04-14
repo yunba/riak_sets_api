@@ -43,7 +43,7 @@ prop_save_and_exists() ->
             {set_key(), set_value()},
             begin
                 Backend = setref_serv,
-                setref_serv:start_link(),
+                Backend:start_link(),
                 Pid   = setref_serv,
                 gen_server:cast(setref_serv,'reset'),
                 false =  Backend:item_in_set(Pid, Key, Value),

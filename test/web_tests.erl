@@ -16,46 +16,87 @@
 -define(PORT, "8080").
 -define(HOST, "http://127.0.0.1").
 
-value() -> quickcheck_util:set_guid().
-set_value() -> value().
-set_key()   -> value().
+value()		-> quickcheck_util:set_guid().
+set_value()	-> value().
+set_key()	-> value().
 
 
-get(Key) ->
-    true.
-get(Key, Value) ->
+get(Host, Key) ->
+    URL = Host ++ "/set/" ++ Key,
+    ?debugFmt("Call ~s", [URL]),
+    restc:request(get, URL).
+
+get(Host, Key, Value) ->
+    URL = Host ++ "/set/" ++ Key ++ "/" ++ Value,
+    restc:request(get, URL).
+
+
+post(Host, Key, Value) ->
+    URL = Host ++ "/set/" ++ Key ++ "/" ++ Value,
+    ?debugFmt("URL ~p", [URL]),
+    {ok, StatusCode, RespHeaders, Ref} = hackney:post( URL,[{<<"Content-Type">>, <<"application/json">>}],  <<" ">>),
+    {ok, Body} = hackney:body(Ref),
+    
+    {ok, StatusCode,RespHeaders,Body}.
+
+
+delete(_Host, _Key, _Value) ->
     true.
 
-post(Key, Value) ->
+delete(_Host, _Key) ->
     true.
 
-delete(Key, Value) ->
-    true.
-
-delete(Key) ->
-    true.
+%% May want to make it rotate around a cluster later
+web_host() ->
+    ?HOST ++ ":" ++ ?PORT.
 
 command(_) -> 
     oneof([
-	   {call, ?MODULE, get,    [set_key(), set_value()]},
-	   {call, ?MODULE, get,    [set_key()]},
-	   {call, ?MODULE, post,   [set_key(), set_value()]},
-	   {call, ?MODULE, delete, [set_key(), set_value()]},
-	   {call, ?MODULE, delete, [set_key()]}
+	   {call, ?MODULE, get,    [web_host(), set_key(), set_value()]},
+	  % {call, ?MODULE, get,    [web_host(), set_key()]},
+	   {call, ?MODULE, post,   [web_host(), set_key(), set_value()]},
+	   {call, ?MODULE, delete, [web_host(), set_key(), set_value()]},
+	   {call, ?MODULE, delete, [web_host(), set_key()]}
 	  ]).
 
-precondition(_,_) ->
-    true.
+precondition(_,_)	->    true.
+initial_state()		->    sets:new().
 
-initial_state() ->
-    sets:new().
 
-next_state(S,_V, _Cmd) ->
-    S.
+next_state(S,_V, {call, _, post, [_, Key, Value]}) ->
+    sets:add_element({Key, Value}, S);
+next_state(S,_V, {call, _, delete, [_, Key, Value]}) ->
+    sets:del_element({Key, Value}, S);
 
-postcondition(S,{call,_,item_in_set, [_,Key, Value]},Result) ->
-    Result == sets:is_element({Key,Value},S);
+next_state(S,_V, _Cmd)	->    S.
+
+
+postcondition(_S, {call,_,_, _},{error, HTTPStatus, _ , _Body}) ->
+    ?debugFmt("Error Status ~p Body ~s~n", [HTTPStatus, _Body]),
+    false;
+
+postcondition(_S, {call,_,get, [_,_Key]},    _HTTPResult = {ok, _HTTPStatus, _ , Body}) ->
+    ?debugFmt("Body ~p~n",[Body]),
+    true;
+
+postcondition(S, { call,_,get, [_,Key, Value]},HTTPResult = {ok, HTTPStatus, _ , _Body}) ->    
+    case {sets:is_element({Key,Value},S),HTTPStatus} of
+	{false, 404} ->
+	    true;
+	{true, 200}  ->
+	    true;
+	{false, _Status} = _S -> 
+	    ?debugFmt("GET Result = ~p", [HTTPResult]),
+	    ?debugFmt("Bad Output ~p", [_S]),
+	    false
+    end;
+postcondition(S, {call, _, post, [_, Key, Value]}, {ok, Status, _,_}) ->
+    ?debugFmt("Status ~p", [Status]),
+    Status == 201;
+   
 postcondition(_S,_Cmd,_Result) ->
+    %?debugFmt("Command ~p", [_Cmd]),
+    %?debugFmt("Result ~p", [_Result]),
     true.
 
 
@@ -63,10 +104,8 @@ prop_run_web() ->
     ?FORALL(Cmds,
 	    non_empty(commands(?MODULE)),
 	    begin
-		quickcheck_util:print_cmds(Cmds,0),
 		{_Start,_End,Result} = run_commands(?MODULE,Cmds),
 		?WHENFAIL(begin
-
 			      quickcheck_util:print_cmds(Cmds,0),
 			      false
 			  end,
@@ -75,6 +114,7 @@ prop_run_web() ->
 	    end).
 
 run_test_() ->
-
+    application:ensure_all_started(restc),
+    hackney:start(),
     {timeout, 3600,
      ?_assertEqual([],proper:module(?MODULE,[100,{to_file, user}]))}.
