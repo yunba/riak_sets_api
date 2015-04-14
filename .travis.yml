@@ -7,8 +7,8 @@ sudo: required
 script:
   - rebar get-deps
   - rebar compile
-  - rebar eunit
   - rebar xref
+  - rebar eunit
   - |
      if [ $TRAVIS_OTP_RELEASE == 17.4 ]
         then

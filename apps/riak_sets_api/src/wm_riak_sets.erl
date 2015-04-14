@@ -15,9 +15,9 @@
 -type halt() :: {error, term()} | {halt, 200..599}.
 
 
-%% The body given by streaming responses.
--type streambody() :: {iodata(), fun(() -> streambody()) | done}.
--type setkey() :: {setkey,binary()}.
+
+
+-type setkey()   :: {setkey,binary()}.
 -type setvalue() :: {setvalue,binary()}.
 
 -record(state, {key   :: opt(setkey()),
@@ -35,7 +35,8 @@
 -include_lib("webmachine/include/webmachine.hrl").
 -spec init(list()) -> {ok, state()}.
 init([]) ->
-    {{trace, "/tmp"}, #state{}}.
+    {ok, #state{}}.
+%    {{trace, "/tmp"}, #state{}}.
 
 -spec allowed_methods(rd(), state()) -> {[Method], rd(), state()}
       when Method :: 'GET' | 'HEAD' | 'PUT' | 'POST' |
@@ -68,6 +69,11 @@ resource_exists(ReqData = #wm_reqdata{method = 'GET'}, State = #state{key = Key,
 
 resource_exists(ReqData = #wm_reqdata{method = 'POST'}, State = #state{key = Key, value = Value}) ->
     ?BACKEND:add_to_set(?BACKEND, Key, Value),
+    {true, ReqData,State};
+
+resource_exists(ReqData = #wm_reqdata{method = 'DELETE'}, State) ->
+    
+
     {true, ReqData,State}.
 
 
@@ -86,7 +92,21 @@ content_types_provided(ReqData,State) ->
     {[{"application/json", to_json}], ReqData,State}.
 
 
--spec(get_key(rd) ->maybe(setkey())).
+
+post_is_create(ReqData,State) ->
+    {false, ReqData,State}.
+
+process_post(ReqData,State) ->
+    {true,ReqData,State}.
+    
+
+-spec delete_resource(rd(), state()) -> {boolean() | halt(), rd(), state()}.
+delete_resource(ReqData, State = #state{key = Key, value = Value}) ->
+    ?BACKEND:remove_from_set(?BACKEND, Key, Value),
+    {true, ReqData,State}.
+
+
+-spec(get_key(rd()) ->maybe(setkey())).
 get_key(ReqData) ->
     case wrq:path_info('key',ReqData) of
 	undefined ->
@@ -95,7 +115,7 @@ get_key(ReqData) ->
 	    {ok, {setkey, list_to_binary(Value)}}
     end.
 
--spec(get_value(rd) ->maybe(setvalue())).
+-spec(get_value(rd()) ->maybe(setvalue())).
 get_value(ReqData) ->
     case wrq:path_info('value',ReqData) of
 	undefined ->
@@ -103,10 +123,3 @@ get_value(ReqData) ->
 	Value when is_list(Value)  ->
 	    {ok, {setvalue, list_to_binary(Value)}}
     end.
-
-post_is_create(ReqData,State) ->
-    {false, ReqData,State}.
-
-process_post(ReqData,State) ->
-    {true,ReqData,State}.
-    

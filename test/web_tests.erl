@@ -47,8 +47,13 @@ post(Host, Key, Value) ->
     {ok, StatusCode,RespHeaders,Body}.
 
 
-delete(_Host, _Key, _Value) ->
-    true.
+delete(Host, Key, Value) ->
+    URL = Host ++ "/set/" ++ Key ++ "/" ++ Value,
+    {_, StatusCode, RespHeaders, Ref} = hackney:delete( URL),
+    {ok, Body} = hackney:body(Ref),
+
+    {ok, StatusCode,RespHeaders,Body}.
+
 
 delete(_Host, _Key) ->
     true.
@@ -57,12 +62,13 @@ delete(_Host, _Key) ->
 web_host() ->
     ?HOST ++ ":" ++ ?PORT.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 command(_) -> 
     oneof([
 	   {call, ?MODULE, get,    [web_host(), set_key(), set_value()]},
 	  % {call, ?MODULE, get,    [web_host(), set_key()]},
-	   {call, ?MODULE, post,   [web_host(), set_key(), set_value()]}
-%	   {call, ?MODULE, delete, [web_host(), set_key(), set_value()]},
+	   {call, ?MODULE, post,   [web_host(), set_key(), set_value()]},
+	   {call, ?MODULE, delete, [web_host(), set_key(), set_value()]}
 %	   {call, ?MODULE, delete, [web_host(), set_key()]}
 	  ]).
 
@@ -70,20 +76,27 @@ precondition(_,_)	->    true.
 initial_state()		->    sets:new().
 
 
-next_state(S,_V, {call, _, post, [_, Key, Value]}) ->
-    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+next_state(S,_V, {call, _, post, [_, Key, Value]}) ->    
     sets:add_element({Key, Value}, S);
+
 next_state(S,_V, {call, _, delete, [_, Key, Value]}) ->
     sets:del_element({Key, Value}, S);
+
+next_state(S,_V, {call, _, delete, [_, Key]}) ->
+    sets:filter(fun({Key1, _}) when Key1 == Key -> false;
+		   (_)        -> true
+		end, S);
 
 next_state(S,_V, _Cmd)	->    S.
  
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 postcondition(_S, {call,_,_, _},{error, HTTPStatus, _ , _Body}) ->
     ?debugFmt("Error Status ~p Body ~s~n", [HTTPStatus, _Body]),
     false;
 
-postcondition(_S, {call,_,get, [_,_Key]},    _HTTPResult = {ok, _HTTPStatus, _ , Body}) ->
+postcondition(_S, {call,_,get, [_,_Key]},    _HTTPResult = {ok, _HTTPStatus, _ , _Body}) ->
     %?debugFmt("Body ~p~n",[Body]),
     true;
 
@@ -98,9 +111,13 @@ postcondition(S, { call,_,get, [_,Key, Value]},HTTPResult = {ok, HTTPStatus, _ ,
 	    ?debugFmt("Bad Output ~p", [_S]),
 	    false
     end;
-postcondition(_S, {call, _, post, [_, _Key, _Value]}, {ok, Status, _,_}) ->
 
+postcondition(_S, {call, _, post, [_, _Key, _Value]}, {ok, Status, _,_}) ->
     lists:member(Status, [200, 201,202,204]);
+
+postcondition(_S, {call, _, delete, _}, {ok, Status, _,_}) ->
+    lists:member(Status, [200, 201,202,204]);
+
 postcondition(_S,_Cmd,_Result) ->
     %?debugFmt("Command ~p", [_Cmd]),
     %?debugFmt("Result ~p", [_Result]),

@@ -40,7 +40,7 @@ $(EBINDIR)/%.beam: $(SRCDIR)/%.erl
 
 DEPS_PLT=$(CURDIR)/plt/dialyzer_plt
 
-DEPS=erts kernel stdlib crypto mnesia deps/webmachine/ebin  deps/lager/ebin  deps/jsx/ebin  deps/mochiweb/ebin deps/sync/ebin  inets
+DEPS=erts kernel stdlib crypto mnesia deps/webmachine/ebin  deps/lager/ebin  deps/jsx/ebin  deps/mochiweb/ebin deps/sync/ebin  inets deps/hackney/ebin deps/proper/ebin deps/triq/ebin 
 
 # =============================================================================
 # Verify that the programs we need to run are installed on this system
