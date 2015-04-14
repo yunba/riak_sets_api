@@ -4,8 +4,7 @@
  ,{registered, []}
  ,{mod, {'riak_sets_app', []}}
  ,{applications,
-   [kernel ,stdlib ,riak_sets_api,setref
-   ]}
+   [kernel ,stdlib ,riak_sets_api, lager, setref]}
  ,{env,[]}
  ,{modules, []}
  ]}.

@@ -155,11 +155,12 @@ distclean: clean
 	- rm -rvf $(CURDIR)/deps
 
 
-rebuild: distclean deps compile escript dialyzer test
+rebuild: distclean deps compile escript test
 
 
 
 
 
 release: all
+	rm -rf deps/exometer_core/test
 	relx
