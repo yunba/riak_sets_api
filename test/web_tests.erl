@@ -23,20 +23,27 @@ set_key()	-> value().
 
 get(Host, Key) ->
     URL = Host ++ "/set/" ++ Key,
-    ?debugFmt("Call ~s", [URL]),
-    restc:request(get, URL).
+    {_, StatusCode, RespHeaders, Ref} = hackney:get( URL),
+    {ok, Body} = hackney:body(Ref),
+
+    {ok, StatusCode,RespHeaders,Body}.
+
 
 get(Host, Key, Value) ->
     URL = Host ++ "/set/" ++ Key ++ "/" ++ Value,
-    restc:request(get, URL).
+    {_, StatusCode, RespHeaders, Ref} = hackney:get( URL),
+    {ok, Body} = hackney:body(Ref),
+
+    {ok, StatusCode,RespHeaders,Body}.
+
 
 
 post(Host, Key, Value) ->
     URL = Host ++ "/set/" ++ Key ++ "/" ++ Value,
-    ?debugFmt("URL ~p", [URL]),
-    {ok, StatusCode, RespHeaders, Ref} = hackney:post( URL,[{<<"Content-Type">>, <<"application/json">>}],  <<" ">>),
+    {_, StatusCode, RespHeaders, Ref} = hackney:post( URL,[{<<"Content-Type">>, <<"application/json">>}],  <<" ">>),
+ 
     {ok, Body} = hackney:body(Ref),
-    
+
     {ok, StatusCode,RespHeaders,Body}.
 
 
@@ -54,9 +61,9 @@ command(_) ->
     oneof([
 	   {call, ?MODULE, get,    [web_host(), set_key(), set_value()]},
 	  % {call, ?MODULE, get,    [web_host(), set_key()]},
-	   {call, ?MODULE, post,   [web_host(), set_key(), set_value()]},
-	   {call, ?MODULE, delete, [web_host(), set_key(), set_value()]},
-	   {call, ?MODULE, delete, [web_host(), set_key()]}
+	   {call, ?MODULE, post,   [web_host(), set_key(), set_value()]}
+%	   {call, ?MODULE, delete, [web_host(), set_key(), set_value()]},
+%	   {call, ?MODULE, delete, [web_host(), set_key()]}
 	  ]).
 
 precondition(_,_)	->    true.
@@ -64,19 +71,20 @@ initial_state()		->    sets:new().
 
 
 next_state(S,_V, {call, _, post, [_, Key, Value]}) ->
+    
     sets:add_element({Key, Value}, S);
 next_state(S,_V, {call, _, delete, [_, Key, Value]}) ->
     sets:del_element({Key, Value}, S);
 
 next_state(S,_V, _Cmd)	->    S.
-
+ 
 
 postcondition(_S, {call,_,_, _},{error, HTTPStatus, _ , _Body}) ->
     ?debugFmt("Error Status ~p Body ~s~n", [HTTPStatus, _Body]),
     false;
 
 postcondition(_S, {call,_,get, [_,_Key]},    _HTTPResult = {ok, _HTTPStatus, _ , Body}) ->
-    ?debugFmt("Body ~p~n",[Body]),
+    %?debugFmt("Body ~p~n",[Body]),
     true;
 
 postcondition(S, { call,_,get, [_,Key, Value]},HTTPResult = {ok, HTTPStatus, _ , _Body}) ->    
@@ -90,10 +98,9 @@ postcondition(S, { call,_,get, [_,Key, Value]},HTTPResult = {ok, HTTPStatus, _ ,
 	    ?debugFmt("Bad Output ~p", [_S]),
 	    false
     end;
-postcondition(S, {call, _, post, [_, Key, Value]}, {ok, Status, _,_}) ->
-    ?debugFmt("Status ~p", [Status]),
-    Status == 201;
-   
+postcondition(_S, {call, _, post, [_, _Key, _Value]}, {ok, Status, _,_}) ->
+
+    lists:member(Status, [200, 201,202,204]);
 postcondition(_S,_Cmd,_Result) ->
     %?debugFmt("Command ~p", [_Cmd]),
     %?debugFmt("Result ~p", [_Result]),
@@ -104,8 +111,10 @@ prop_run_web() ->
     ?FORALL(Cmds,
 	    non_empty(commands(?MODULE)),
 	    begin
+                gen_server:cast(setref_serv,'reset'),
 		{_Start,_End,Result} = run_commands(?MODULE,Cmds),
 		?WHENFAIL(begin
+			      ?debugFmt("~nResult ~p", [Result]),
 			      quickcheck_util:print_cmds(Cmds,0),
 			      false
 			  end,

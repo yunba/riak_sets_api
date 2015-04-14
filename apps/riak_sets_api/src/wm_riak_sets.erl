@@ -45,14 +45,14 @@ allowed_methods(ReqData, State) ->
     {ok, Key} = get_key(ReqData),
     case get_value(ReqData) of 
 	not_found ->
-	        {['GET','HEAD', 'POST', 'DELETE'], 
+	        {['GET','HEAD', 'DELETE'], 
 		 ReqData,
 		 State#state{
 		   key   = Key,
 		   value = undefined
 		  }};
 	{ok,Value} ->
-	    {['GET','HEAD', 'DELETE'], 
+	    {['GET','HEAD', 'POST', 'DELETE'], 
 	     ReqData,State#state{
 		       key   = Key,
 		       value = Value}}
@@ -60,18 +60,21 @@ allowed_methods(ReqData, State) ->
 
 -spec resource_exists(rd(), state()) -> {boolean() | halt(), rd(), state()}.
 resource_exists(ReqData= #wm_reqdata{ method = 'GET'}, State = #state{key = Key, value = undefined}) ->
-    lager:info("Resource Exits ~p", [lager:pr(State, ?MODULE)]),
+    
     {true, ReqData, State};
 
 resource_exists(ReqData = #wm_reqdata{method = 'GET'}, State = #state{key = Key, value = Value}) ->
-    lager:info("Resource Exits ~p", [lager:pr(State, ?MODULE)]),
-    lager:info("Item Exists ~p", [?BACKEND:item_in_set(?BACKEND, Key, Value)]),
-    {?BACKEND:item_in_set(?BACKEND, Key, Value), ReqData, State}.
+    {?BACKEND:item_in_set(?BACKEND, Key, Value), ReqData, State};
+
+resource_exists(ReqData = #wm_reqdata{method = 'POST'}, State = #state{key = Key, value = Value}) ->
+    ?BACKEND:add_to_set(?BACKEND, Key, Value),
+    {true, ReqData,State}.
 
 
 -spec to_html(rd(), term()) -> {iodata(), rd(), state()}.
 to_html(ReqData, State) ->
     {"<html><body>ok</body></html>\n", ReqData, State}.
+
 
 -spec to_json(rd(), term()) -> {iodata(), rd(), state()}.
 to_json(ReqData,State) ->
@@ -81,6 +84,7 @@ to_json(ReqData,State) ->
 -spec content_types_provided(rd(), state()) -> {[{MediaType::string(), Handler::atom()}], rd(), state()}.
 content_types_provided(ReqData,State) ->
     {[{"application/json", to_json}], ReqData,State}.
+
 
 -spec(get_key(rd) ->maybe(setkey())).
 get_key(ReqData) ->
@@ -99,3 +103,10 @@ get_value(ReqData) ->
 	Value when is_list(Value)  ->
 	    {ok, {setvalue, list_to_binary(Value)}}
     end.
+
+post_is_create(ReqData,State) ->
+    {false, ReqData,State}.
+
+process_post(ReqData,State) ->
+    {true,ReqData,State}.
+    
