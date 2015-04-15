@@ -7,19 +7,6 @@
 %%% Created : 14 Apr 2015 by Zachary Kessin <>
 %%%-------------------------------------------------------------------
 -module(wm_riak_sets).
--include_lib("types/include/types.hrl").
-%% The Request data record
--type rd() :: wrq:reqdata().
--compile([{parse_transform, lager_transform}]). 
-%% Used in callbacks that can halt or error. See "Halting Resources" above.
--type halt() :: {error, term()} | {halt, 200..599}.
-
-
-
-
--type setkey()   :: {setkey,binary()}.
--type setvalue() :: {setvalue,binary()}.
-
 -record(state, {key   :: opt(setkey()),
 		value :: opt(setvalue())}).
 %% The resource's internal state
@@ -30,9 +17,9 @@
 	 to_html/2
 	]).
 -compile(export_all).
--define(BACKEND, setref_serv).
 
--include_lib("webmachine/include/webmachine.hrl").
+-include("api.hrl").
+
 -spec init(list()) -> {ok, state()}.
 init([]) ->
     {ok, #state{}}.
@@ -61,7 +48,6 @@ allowed_methods(ReqData, State) ->
 
 -spec resource_exists(rd(), state()) -> {boolean() | halt(), rd(), state()}.
 resource_exists(ReqData= #wm_reqdata{ method = 'GET'}, State = #state{key = Key, value = undefined}) ->
-    
     {true, ReqData, State};
 
 resource_exists(ReqData = #wm_reqdata{method = 'GET'}, State = #state{key = Key, value = Value}) ->
@@ -72,8 +58,6 @@ resource_exists(ReqData = #wm_reqdata{method = 'POST'}, State = #state{key = Key
     {true, ReqData,State};
 
 resource_exists(ReqData = #wm_reqdata{method = 'DELETE'}, State) ->
-    
-
     {true, ReqData,State}.
 
 

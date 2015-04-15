@@ -16,10 +16,17 @@
 -define(PORT, "8080").
 -define(HOST, "http://127.0.0.1").
 
-value()		-> quickcheck_util:set_guid().
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% May want to make it rotate around a cluster later
+web_host() ->
+    ?HOST ++ ":" ++ ?PORT.
+
+value()		-> frequency([{10,quickcheck_util:uuid()},
+			      {100,quickcheck_util:set_guid()}]).
 set_value()	-> value().
 set_key()	-> value().
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 get(Host, Key) ->
     URL = Host ++ "/set/" ++ Key,
@@ -54,13 +61,18 @@ delete(Host, Key, Value) ->
 
     {ok, StatusCode,RespHeaders,Body}.
 
+count(Host, Key) ->
+    URL = Host ++ "/count/" ++ Key,
+    
+    {_, StatusCode, RespHeaders, Ref} = hackney:get( URL),
+    {ok, Body} = hackney:body(Ref),
+
+    {ok, StatusCode,RespHeaders,Body}.
+
 
 delete(_Host, _Key) ->
     true.
 
-%% May want to make it rotate around a cluster later
-web_host() ->
-    ?HOST ++ ":" ++ ?PORT.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 command(_) -> 
@@ -68,7 +80,8 @@ command(_) ->
 	   {call, ?MODULE, get,    [web_host(), set_key(), set_value()]},
 	  % {call, ?MODULE, get,    [web_host(), set_key()]},
 	   {call, ?MODULE, post,   [web_host(), set_key(), set_value()]},
-	   {call, ?MODULE, delete, [web_host(), set_key(), set_value()]}
+	   {call, ?MODULE, delete, [web_host(), set_key(), set_value()]},
+	   {call, ?MODULE, count,  [web_host(), set_key()]}
 %	   {call, ?MODULE, delete, [web_host(), set_key()]}
 	  ]).
 
@@ -92,6 +105,11 @@ next_state(S,_V, _Cmd)	->    S.
  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+postcondition(_S,  _ ,   {_, 500, _ , Body}) ->
+    ?debugFmt("HTTP Error code 500 ~n~p~n~n",[Body]),
+    false;
+
+
 postcondition(_S, {call,_,_, _},{error, HTTPStatus, _ , _Body}) ->
     ?debugFmt("Error Status ~p Body ~s~n", [HTTPStatus, _Body]),
     false;
@@ -118,6 +136,16 @@ postcondition(_S, {call, _, post, [_, _Key, _Value]}, {ok, Status, _,_}) ->
 postcondition(_S, {call, _, delete, _}, {ok, Status, _,_}) ->
     lists:member(Status, [200, 201,202,204]);
 
+postcondition(Set, {call, _, count, [_,Key]}, {ok, Status, _, Body}) ->
+    ?assertEqual( 200,Status),
+    ModelSize = sets:size(sets:filter(fun({Key1, _}) when Key1 == Key -> true;
+					 (_)        -> false
+			      end, Set)),
+    Size = jsx:decode(Body),    
+    ?assert(is_number(Size)),
+    ModelSize == Size    ;
+
+    
 postcondition(_S,_Cmd,_Result) ->
     %?debugFmt("Command ~p", [_Cmd]),
     %?debugFmt("Result ~p", [_Result]),

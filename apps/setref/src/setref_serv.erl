@@ -19,7 +19,7 @@
 -export([item_in_set/3]).
 -export([add_to_set/3]).
 -export([remove_from_set/3]).
-
+-export([size/2]).
 -compile({parse_transform, lager_transform}).
 
 -define(SERVER, ?MODULE).
@@ -41,6 +41,10 @@ remove_from_set(Pid,Set,Item) ->
     gen_server:call(Pid, {remove_from_set, Set, Item}),
     true.
 
+size(Pid,Set) ->
+    gen_server:call(Pid, {size, Set}).
+
+    
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the server
@@ -94,7 +98,13 @@ handle_call({add_to_dataset, Key, Item}, _From, Set) ->
     {reply,ok,sets:add_element({Key,Item},Set)};
 handle_call({remove_from_set, Key, Item}, _From, Set) ->
     {reply,ok,sets:del_element({Key,Item},Set)};
+handle_call({size, Key}, _From, Set) ->
+    Set1 =     sets:filter(fun({Key1, _}) when Key1 == Key -> true;
+		   (_)        -> false
+		end, Set),
+    Size = sets:size(Set1),
 
+    {reply, {size, Size}, Set};
 handle_call(list, _From,Set) ->
     {reply, Set, Set}.
 
