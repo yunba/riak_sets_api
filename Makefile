@@ -163,3 +163,6 @@ rebuild: distclean deps compile escript test
 
 release: all
 	$(REBAR) generate
+
+build: release
+	notify "Build"
