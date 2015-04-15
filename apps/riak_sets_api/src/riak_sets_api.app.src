@@ -9,9 +9,10 @@
                   kernel,
                   stdlib,
                   inets,
-                  crypto,
+                  crypto,		  
                   mochiweb,
-                  webmachine
+                  webmachine,
+		  lager
                  ]},
   {mod, { riak_sets_api_app, []}},
   {env, [

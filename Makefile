@@ -162,5 +162,4 @@ rebuild: distclean deps compile escript test
 
 
 release: all
-	rm -rf deps/exometer_core/test
-	relx
+	$(REBAR) generate

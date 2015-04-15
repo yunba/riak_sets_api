@@ -1,15 +1,20 @@
-%%%-------------------------------------------------------------------
-%%% @author Zachary Kessin <>
-%%% @copyright (C) 2015, Zachary Kessin
-%%% @doc
-%%%
-%%% @end
-%%% Created : 14 Apr 2015 by Zachary Kessin <>
-%%%-------------------------------------------------------------------
 -module(riak_sets).
+-include("riak_sets.hrl").
+-include_lib("riak_core/include/riak_core_vnode.hrl").
 
--export([start/0]).
+-export([
+         ping/0
+        ]).
 
-start() ->
-    io:format("Starting riak sets~n"),
-    application:ensure_all_started(riak_sets).
+-ignore_xref([
+              ping/0
+             ]).
+
+%% Public API
+
+%% @doc Pings a random vnode to make sure communication is functional
+ping() ->
+    DocIdx = riak_core_util:chash_key({<<"ping">>, term_to_binary(now())}),
+    PrefList = riak_core_apl:get_primary_apl(DocIdx, 1, riak_sets),
+    [{IndexNode, _Type}] = PrefList,
+    riak_core_vnode_master:sync_spawn_command(IndexNode, ping, riak_sets_vnode_master).

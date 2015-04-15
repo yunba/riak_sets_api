@@ -1,10 +1,16 @@
+%% -*- erlang -*-
 {application, riak_sets,
- [{description, "A set store with Riak distribution"}
- ,{vsn, "0.1.0"}
- ,{registered, []}
- ,{mod, {'riak_sets_app', []}}
- ,{applications,
-   [kernel ,stdlib ,riak_sets_api, lager, setref]}
- ,{env,[]}
- ,{modules, []}
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  riak_core,
+		  lager, 
+		  riak_sets_api
+                 ]},
+  {mod, { riak_sets_app, []}},
+  {env, []}
  ]}.
