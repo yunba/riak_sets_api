@@ -1,0 +1,9 @@
+*.beam
+_build
+.rebar
+.eunit
+ebin/
+deps/
+*~
+erl_crash.dump
+log/

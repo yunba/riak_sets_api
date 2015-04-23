@@ -1,0 +1,12 @@
+{application, setref,
+ [
+  {description, "A refrence set implementation"},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { setref_app, []}},
+  {env, []}
+ ]}.
