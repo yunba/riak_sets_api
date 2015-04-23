@@ -1,4 +1,4 @@
--define(BACKEND, setref_serv).
+-define(BACKEND, riak_sets).
 -include_lib("types/include/types.hrl").
 %% The Request data record
 -type rd() :: wrq:reqdata().

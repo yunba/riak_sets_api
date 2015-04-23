@@ -38,7 +38,7 @@ resource_exists(ReqData , State ) ->
 to_json(ReqData,State) ->
     {ok, Key}    = wm_riak_sets:get_key(ReqData),
 
-    {size, Size} = ?BACKEND:size(?BACKEND, Key),
+    Size = riak_sets:size(Key),
     
     {[jsx:encode(Size), "\n"], ReqData,State}.
 

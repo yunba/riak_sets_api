@@ -51,10 +51,10 @@ resource_exists(ReqData= #wm_reqdata{ method = 'GET'}, State = #state{key = Key,
     {true, ReqData, State};
 
 resource_exists(ReqData = #wm_reqdata{method = 'GET'}, State = #state{key = Key, value = Value}) ->
-    {?BACKEND:item_in_set(?BACKEND, Key, Value), ReqData, State};
+    {riak_sets:item_in_set( Key, Value), ReqData, State};
 
 resource_exists(ReqData = #wm_reqdata{method = 'POST'}, State = #state{key = Key, value = Value}) ->
-    ?BACKEND:add_to_set(?BACKEND, Key, Value),
+    riak_sets:add_to_set( Key, Value),
     {true, ReqData,State};
 
 resource_exists(ReqData = #wm_reqdata{method = 'DELETE'}, State) ->
@@ -86,7 +86,7 @@ process_post(ReqData,State) ->
 
 -spec delete_resource(rd(), state()) -> {boolean() | halt(), rd(), state()}.
 delete_resource(ReqData, State = #state{key = Key, value = Value}) ->
-    ?BACKEND:remove_from_set(?BACKEND, Key, Value),
+    riak_sets:remove_from_set( Key, Value),
     {true, ReqData,State}.
 
 
