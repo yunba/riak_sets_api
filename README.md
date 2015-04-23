@@ -1,4 +1,4 @@
 
+This is the web frontend for the riak_sets project,
 
-# riak_sets_api
-Key/Value Store with sets supported, based on riak_core
+It observes standard REST Semeantics with a GET/POST/DELETE operations
